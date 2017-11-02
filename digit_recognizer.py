@@ -37,6 +37,10 @@ trainset = pd.read_csv('train.csv')
 train_images = trainset.iloc[:, 1:].values
 train_labels = trainset.iloc[:, 0].values.ravel()
 
-print(len(train_images))
+trainset = pd.read_csv('test.csv')
+test_images = trainset.iloc[:, 1:].values
+test_labels = trainset.iloc[:, 0].values.ravel()
 
-print(len(train_labels))
+print(len(test_images))
+
+print(len(test_labels))

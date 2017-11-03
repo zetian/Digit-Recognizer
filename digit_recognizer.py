@@ -107,7 +107,7 @@ train_set = DigitData('input/train.csv')
 train_set = DataLoader(train_set, batch_size = 64, shuffle = True, num_workers = 4)
 # print(train_set)
 test_set = TestData('input/test.csv')
-test_set = DataLoader(test_set, batch_size = 1, shuffle = True, num_workers = 4)
+test_set = DataLoader(test_set, batch_size = 1, shuffle = False, num_workers = 4)
 # train_set.show_img(1)
 
 test_loader = torch.utils.data.DataLoader(
@@ -146,7 +146,7 @@ def pred():
     for data in test_set:
         data = Variable(data, volatile=True)
         output = cnn_net(data)
-        pred_single = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
+        pred_single = output.data.max(1, keepdim=True)[1][0][0] # get the index of the max log-probability
         # print(pred_single)
         pred.append(pred_single)
         # break
@@ -175,15 +175,25 @@ def test():
 #     train(epoch)
 #     test()
 cnn_net.load_state_dict(torch.load('mnist_training.pt'))
-
-image_id = range(1, 10 + 1)
-# prediction = pred()
+image_id = []
+for i in range(1, len(test_set) + 1):
+    image_id.append(i)
+# image_id = [range(1, 10 + 1)]
+# print(image_id)
+test()
+prediction = pred()
 
 # print(prediction)
 
-d = {'ImageId': image_id, 'Label': image_id}
-submission = pd.DataFrame(data=d)
-submission.to_scv('submisiion.csv')
+
+raw_data = {'ImageId': image_id,
+        'Label': prediction}
+df = pd.DataFrame(raw_data, columns = ['ImageId', 'Label'])
+df.to_csv('submisiion.csv', index=False)
+
+# raw_data = {'ImageId': [1,2,3], 'Label': [1,2,3]}
+# df = pd.DataFrame(raw_data, columns = ['ImageId', 'Label'])
+# df.to_scv('submisiion.csv')
 # submission.to_csv('submisiion.csv', sep='\t')
 # print(df)
 

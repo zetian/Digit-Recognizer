@@ -12,6 +12,11 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 
+# Hyper Parameters
+EPOCH = 1         
+BATCH_SIZE = 50
+LR = 0.001          
+
 
 class DigitData(data.Dataset):
     # img_to_tensor = transforms.Compose([transforms.ToTensor()])
@@ -40,9 +45,9 @@ class DigitData(data.Dataset):
         plt.show()
 
 
-class Net(nn.Module):
+class CNN(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()
@@ -58,8 +63,8 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x)
 
-model = Net()
-# optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+
+# optimizer = optim.SGD(cnn_net.parameters())
 
 # def train(epoch):
 #     model.train()
@@ -79,81 +84,42 @@ model = Net()
 
 
 train_set = DigitData('input/train.csv')
+train_set = DataLoader(train_set, batch_size = 64, shuffle = True, num_workers = 4)
+# print(train_set)
 test_set = DigitData('input/test.csv')
-train_set.show_img(1)
+test_set = DataLoader(test_set, batch_size = 64, shuffle = True, num_workers = 4)
+# train_set.show_img(1)
 
-# plt.imshow(train_set.__getitem__(0).numpy(), cmap='gray')
-# plt.title('%i' % train_data.train_labels[0])
-# plt.show()
-# image_1, label_1 = train_set.__getitem__(0)
-# print(image_1)
-# print("~~~~~")
-# print(label_1)
-
-# img_to_tensor = transforms.Compose([transforms.ToTensor()])
-# trainset = pd.read_csv('train.csv')
-# images = trainset.iloc[:, 1:].values
-
-# image = to_tensor(image)
-# train_loader = DataLoader(trainset, batch_size=64,shuffle=True, num_workers=4)
-# valset = DigitData('test.csv', transforms)
-# val_loader = DataLoader(valset, batch_size=64,shuffle=False, num_workers=4)
-# ===========================================
-# train_set = pd.read_csv('train.csv')
-# images = train_set.iloc[:, 1:].values
+cnn_net = CNN()
+print(cnn_net)
+optimizer = torch.optim.Adam(cnn_net.parameters(), lr = LR)
+loss_func = nn.CrossEntropyLoss()
 
 
-# image = images[0]
-# image = images[0].reshape((28, 28)).astype(np.uint8)
-# image = Image.fromarray(image, mode='L')
-# image.show()
-# print(image)
+def train(epoch):
+    cnn_net.train()
+    for batch_idx, (data, target) in enumerate(train_set):
+        data, target = Variable(data), Variable(target)
+        optimizer.zero_grad()
+        output = cnn_net(data)
+        loss = F.nll_loss(output, target)
+        loss.backward()
+        optimizer.step()
 
-# image_size = images.shape[1]
-# image_width = image_height = np.ceil(np.sqrt(image_size)).astype(np.uint8)
-# image = image.reshape((image_width, image_height)).astype(np.uint8)
-# print("~~~~~~~~~~~~~")
-# print(image)
-# image = image.fromarray(image, mode='L')
-# image = to_tensor(image)
-# ===========================================
+# def test():
+#     cnn_net.eval()
+#     test_loss = 0
+#     correct = 0
+#     for batch_idx, (data, target) in enumerate(test_set):
+#         data, target = Variable(data, volatile=True), Variable(target)
+#         output = cnn_net(data)
+#         test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
+#         pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
+#         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+#     test_loss /= test_set.__len__()
+#     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+#         test_loss, correct, test_set.__len__(),
+#         100. * correct / test_set.__len__()))
 
-# normalize = transforms.Normalize(
-#    mean=[0.485, 0.456, 0.406],
-#    std=[0.229, 0.224, 0.225]
-# )
-# preprocess = transforms.Compose([
-#    transforms.Scale(256),
-#    transforms.CenterCrop(224),
-#    transforms.ToTensor(),
-#    normalize
-# ])
-
-# img_pil = Image.open("cat.jpg")
-# img_tensor = preprocess(img_pil)
-# print(img_pil)
-# img_tensor.show()
-# img_tensor.unsqueeze_(0)
-
-# try_set = pd.read_csv('try.csv')
-
-# images = try_set.iloc[:, 1:].values
-# # print(images[0])
-# image = images[0].reshape((2, 2)).astype(np.uint8)
-# # print(image)
-# image = Image.fromarray(image, mode='L')
-# # image.show()
-# image = img_to_tensor(image)
-# print(image)
-# image = img_to_tensor(image)
-# trainset = pd.read_csv('train.csv')
-# train_images = trainset.iloc[:, 1:].values
-# train_labels = trainset.iloc[:, 0].values.ravel()
-
-# trainset = pd.read_csv('test.csv')
-# test_images = trainset.iloc[:, 1:].values
-# test_labels = trainset.iloc[:, 0].values.ravel()
-
-# print(len(test_images))
-
-# print(len(test_labels))
+for epoch in range(1, EPOCH + 1):
+    train(epoch)

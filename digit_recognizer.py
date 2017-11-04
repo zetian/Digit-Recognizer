@@ -14,7 +14,7 @@ import csv
 from PIL import Image
 
 # Hyper Parameters
-EPOCH = 20        
+EPOCH = 100     
 BATCH_SIZE = 50
 LR = 0.001          
 
@@ -66,7 +66,7 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        self.conv2_drop = nn.Dropout2d()
+        self.conv2_drop = nn.Dropout2d(p = 0.2)
         self.fc1 = nn.Linear(320, 50)
         self.fc2 = nn.Linear(50, 10)
 
@@ -95,6 +95,9 @@ test_loader = torch.utils.data.DataLoader(
 
 cnn_net = CNN()
 optimizer = torch.optim.Adam(cnn_net.parameters(), lr = LR)
+
+# optimizer = optim.SGD(cnn_net.parameters(), lr=LR)
+
 loss_func = nn.CrossEntropyLoss()
 
 def train(epoch):
@@ -139,10 +142,19 @@ def test():
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
-cnn_net.load_state_dict(torch.load('mnist_training.pt'))
+# for epoch in range(1, EPOCH + 1):
+#     train(epoch)
+
+# torch.save(cnn_net.state_dict(), 'mnist_training_v2.pt')
+
+
+cnn_net.load_state_dict(torch.load('mnist_training_v2.pt'))
 # test()
+
+#=====output submision
 prediction = pred()
 raw_data = {'ImageId': range(1, len(test_set) + 1),
         'Label': prediction}
 df = pd.DataFrame(raw_data, columns = ['ImageId', 'Label'])
-df.to_csv('submisiion.csv', index=False)
+df.to_csv('submision_v2.csv', index=False)
+#=========================

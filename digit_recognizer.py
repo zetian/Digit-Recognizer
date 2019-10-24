@@ -77,9 +77,7 @@ class CNN(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
-        return F.log_softmax(x)
-
-# optimizer = optim.SGD(cnn_net.parameters())
+        return F.log_softmax(x, dim=1)
 
 train_set = DigitData('input/train.csv')
 train_set = DataLoader(train_set, batch_size = 64, shuffle = True, num_workers = 4)
@@ -90,7 +88,8 @@ test_loader = torch.utils.data.DataLoader(
     datasets.MNIST('data', train=False, transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
-                   ])),
+                   ]),
+                   download = False),
     batch_size = 64, shuffle = True)
 
 cnn_net = CNN()
@@ -102,6 +101,7 @@ loss_func = nn.CrossEntropyLoss()
 
 def train(epoch):
     cnn_net.train()
+    # with torch.no_grad():
     for batch_idx, (data, target) in enumerate(train_set):
         data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
@@ -111,31 +111,28 @@ def train(epoch):
         optimizer.step()
         print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_set.dataset),
-                100. * batch_idx / len(train_set), loss.data[0]))
+                100. * batch_idx / len(train_set), loss.data))
 
 def pred():
     cnn_net.eval()
     pred = []
-    test_loss = 0
-    correct = 0
-
-    for data in test_set:
-        data = Variable(data, volatile=True)
-        output = cnn_net(data)
-        pred_single = output.data.max(1, keepdim=True)[1][0][0] # get the index of the max log-probability
-        pred.append(pred_single)
+    with torch.no_grad():
+        for data in test_set:
+            output = cnn_net(data)
+            pred_single = output.data.max(1, keepdim=True)[1][0][0] # get the index of the max log-probability
+            pred.append(pred_single)
     return pred
 
 def test():
     cnn_net.eval()
     test_loss = 0
     correct = 0
-    for data, target in test_loader:
-        data, target = Variable(data, volatile=True), Variable(target)
-        output = cnn_net(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
-        pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
-        correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+    with torch.no_grad():
+        for data, target in test_loader:
+            output = cnn_net(data)
+            test_loss += F.nll_loss(output, target).data # sum up batch loss
+            pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
+            correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
     test_loss /= len(test_loader.dataset)
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
@@ -145,16 +142,16 @@ def test():
 # for epoch in range(1, EPOCH + 1):
 #     train(epoch)
 
-# torch.save(cnn_net.state_dict(), 'mnist_training_v2.pt')
+# torch.save(cnn_net.state_dict(), 'mnist_training_updated.pt')
 
 
-cnn_net.load_state_dict(torch.load('mnist_training_v2.pt'))
-# test()
+cnn_net.load_state_dict(torch.load('mnist_training_updated.pt'))
+test()
 
 #=====output submision
-prediction = pred()
-raw_data = {'ImageId': range(1, len(test_set) + 1),
-        'Label': prediction}
-df = pd.DataFrame(raw_data, columns = ['ImageId', 'Label'])
-df.to_csv('submision_v2.csv', index=False)
+# prediction = pred()
+# raw_data = {'ImageId': range(1, len(test_set) + 1),
+#         'Label': prediction}
+# df = pd.DataFrame(raw_data, columns = ['ImageId', 'Label'])
+# df.to_csv('submision_v2.csv', index=False)
 #=========================
